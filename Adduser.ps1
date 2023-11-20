@@ -6,13 +6,13 @@ $departments = $users | Select-Object -Property Department -Unique
 
 foreach ($department in $departments) {
     $ouName = $department.Department
-    New-ADOrganizationalUnit -Name $ouName -Path "DC=Espagne,DC=lan"
+    New-ADOrganizationalUnit -Name $ouName -Path "DC=espagne,DC=lan"
 }
 
 # Créer les groupes pour chaque département
 foreach ($department in $departments) {
     $groupName = $department.Department + " Group"
-    New-ADGroup -Name $groupName -GroupScope Global -Path "OU=" + $department.Department + ",DC=Espagne,DC=lan"
+    New-ADGroup -Name $groupName -GroupScope Global -Path "OU=" + $department.Department + ",DC=espagne,DC=lan"
 }
 
 # Créer les utilisateurs
@@ -25,7 +25,7 @@ foreach ($user in $users) {
         Surname = $user.surname
         Department = $user.Department
         Country = $user.country
-        Path = "OU=" + $user.Department + ",DC=Espagne,DC=lan"
+        Path = "OU=" + $user.Department + ",DC=espagne,DC=lan"
     }
 
     New-ADUser @userParams
