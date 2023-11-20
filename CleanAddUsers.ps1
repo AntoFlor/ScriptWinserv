@@ -1,4 +1,4 @@
-$users = Import-Csv -Path "./users.csv" -Delimiter ";"
+$users = Import-Csv -Path "./formated_users.csv" -Delimiter ";"
 
 function create_global_group{
     param(
