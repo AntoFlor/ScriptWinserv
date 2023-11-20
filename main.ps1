@@ -29,6 +29,12 @@ function Read-Host-Trim-ToLower{
     return $in.ToLower()
 }
 
+function generate_password{
+    Add-Type -AssemblyName System.Web
+    $pwd $([System.Web.Security.Membership]::GeneratePassword(8,2))
+    return $pwd
+}
+
 function network_config{
     $ip_string = Read-Host-Trim "Ip address"
     $ip_address = [System.Net.IPAddress]::Parse($ip_string)
