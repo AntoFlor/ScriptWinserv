@@ -39,6 +39,11 @@ foreach ($department in $departments) {
 
 # Créer les utilisateurs
 foreach ($user in $users) {
+    if ($null -eq $user.Prenom -or $null -eq $user.Nom) {
+        Write-Host "Les propriétés Prenom ou Nom sont nulles. Utilisateur ignoré."
+        continue
+    }
+
     $samAccountName = "espagne\" + $user.Prenom.ToLower()
     $logonName = $user.Prenom.ToLower() + "." + $user.Nom.ToLower() + "@es.lan"
 
@@ -55,12 +60,12 @@ foreach ($user in $users) {
             }
         }
     }
+
     # Demander à l'utilisateur d'écrire manuellement le logonName
     $logonNameInput = Read-Host "Entrez le logonName manuellement :"
     if ($logonNameInput) {
         $logonName = $logonNameInput
     }
-
     $userParams = @{
         SamAccountName    = $samAccountName2
         UserPrincipalName = $logonName
