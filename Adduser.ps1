@@ -42,6 +42,11 @@ foreach ($user in $users) {
     $samAccountName = "espagne\" + $user.Prenom.ToLower()
     $logonName = $user.Prenom.ToLower() + "." + $user.Nom.ToLower() + "@es.lan"
 
+    if ($samAccountName.Length -gt 20) {
+        $firstNameInitial = $user.Prenom.Substring(0, 1)
+        $samAccountName2 = "espagne\" + $firstNameInitial + "." + $user.Nom
+        $logonName = $firstNameInitial + "." + $user.Nom + "es.lan"
+
         # Demander à l'utilisateur d'écrire manuellement le samAccountName2 si nécessaire
         if ($samAccountName2.Length -gt 20) {
             $samAccountName2Input = Read-Host "Le samAccountName2 est trop long. Entrez manuellement :"
@@ -49,7 +54,7 @@ foreach ($user in $users) {
                 $samAccountName2 = $samAccountName2Input
             }
         }
-
+    }
     # Demander à l'utilisateur d'écrire manuellement le logonName
     $logonNameInput = Read-Host "Entrez le logonName manuellement :"
     if ($logonNameInput) {
