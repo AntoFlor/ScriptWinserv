@@ -14,6 +14,12 @@ function create_global_group{
     }
 }
 
+function generate_password{
+    Add-Type -AssemblyName System.Web
+    $pwd = $([System.Web.Security.Membership]::GeneratePassword(20,5))
+    return $pwd
+}
+
 function create_organizational_units_and_GGs_from_csv{
     # Create root department OU
     if (-not (Get-ADOrganizationalUnit -Filter "distinguishedName -eq 'OU=Departement,DC=espagne,DC=lan'")){
@@ -122,6 +128,16 @@ function setup_common_group{
     }
 }
 
+function store_user_account_locally{
+    param($user, $password)
+
+    Try{
+        "${user}:${password}" >> logins.txt
+    } Catch{
+        Write-Host "An error occured while saving the user locally.`nError: ${_}" -ForegroundColor Red
+    }
+}
+
 function create_user{
     param ($user, $path, $global_group)
 
@@ -183,17 +199,14 @@ function create_user{
                     }
                     $error = $false
                 }
-                # Demander Ã  l'utilisateur d'Ã©crire manuellement le logonName
-                $logonNameInput = Read-Host "Entrez le logonName manuellement :"
-                if ($logonNameInput) {
-                    $logonName = $logonNameInput
-                }
             }
         }
         $samAccountName = $samAccountName.ToLower()
         $samAccountName = $samAccountName.Replace(' ','')
         $logonName = "${samAccountName}@espagne.lan"
     }
+
+    $password = generate_password
     
     $userParams = @{
         SamAccountName    = $samAccountName
@@ -203,11 +216,14 @@ function create_user{
         Surname           = $lastname
         Path              = $path
         Office            = $office_number
+        AccountPassword   = ConvertTo-SecureString $password -AsPlainText -Force
     }
     try {
         if (-not $(Get-ADUser -Filter "Name -like '$samAccountName'")){
             New-ADUser @userParams -ErrorAction Stop
             Write-Host "User ${samAccountName} successfully created." -ForegroundColor Green
+            store_user_account_locally $samAccountName $password
+            Write-Host "User ${samAccountName} saved locally." -ForegroundColor Green
         } else{
             Write-Host "Error: User ${samAccountName} already exists!" -ForegroundColor Red
         }
@@ -237,5 +253,5 @@ function create_user{
     #>
     
 }
-
+#create_common_group
 create_organizational_units_and_GGs_from_csv
