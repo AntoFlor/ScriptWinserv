@@ -183,6 +183,11 @@ function create_user{
                     }
                     $error = $false
                 }
+                # Demander Ã  l'utilisateur d'Ã©crire manuellement le logonName
+                $logonNameInput = Read-Host "Entrez le logonName manuellement :"
+                if ($logonNameInput) {
+                    $logonName = $logonNameInput
+                }
             }
         }
         $samAccountName = $samAccountName.ToLower()
