@@ -100,14 +100,14 @@ function create_users{
                 if ($samAccountName2Input) {
                     $samAccountName2 = $samAccountName2Input
                 }
+                # Demander Ã  l'utilisateur d'Ã©crire manuellement le logonName
+                $logonNameInput = Read-Host "Entrez le logonName manuellement :"
+                if ($logonNameInput) {
+                    $logonName = $logonNameInput
+                }
             }
         }
 
-        # Demander Ã  l'utilisateur d'Ã©crire manuellement le logonName
-        $logonNameInput = Read-Host "Entrez le logonName manuellement :"
-        if ($logonNameInput) {
-            $logonName = $logonNameInput
-        }
         $userParams = @{
             SamAccountName    = $samAccountName2
             UserPrincipalName = $logonName
