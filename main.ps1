@@ -31,7 +31,7 @@ function Read-Host-Trim-ToLower{
 
 function generate_password{
     Add-Type -AssemblyName System.Web
-    $pwd $([System.Web.Security.Membership]::GeneratePassword(8,2))
+    $pwd = $([System.Web.Security.Membership]::GeneratePassword(8,2))
     return $pwd
 }
 
