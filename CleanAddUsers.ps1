@@ -10,22 +10,23 @@ function create_global_group{
     Try{
         New-ADGroup -Name $group_name -GroupScope Global -Path $path -ErrorAction Stop
     } Catch{
-        Write-Host "Erreur lors de la creation du groupe $group_name.`nError: ${_}"
+        Write-Host "An error occurend while creating group $group_name.`nError: ${_}" -ForegroundColor Red
     }
-    
 }
 
 function create_organizational_units_and_GGs_from_csv{
     # Create root department OU
-    if (-not (Get-ADOrganizationalUnit -Filter "distinguishedName -eq 'OU=departement,DC=espagne,DC=lan'")){
-        New-ADOrganizationalUnit -Name "departement" -Path "DC=espagne,DC=lan" -ErrorAction Stop
+    if (-not (Get-ADOrganizationalUnit -Filter "distinguishedName -eq 'OU=Departement,DC=espagne,DC=lan'")){
+        New-ADOrganizationalUnit -Name "Departement" -Path "DC=espagne,DC=lan" -ErrorAction Stop
     }
 
-    $departments = $users | Select-Object -ExpandProperty Departement
-    foreach ($department in $departments) {
+    create_common_group
+
+    foreach ($user in $users) {
         Try {
+            $department = $user | Select-Object -ExpandProperty Departement
             $department = $department.Replace(" ", "_")
-            $parent_ou = "OU=departement,DC=espagne,DC=lan"
+            $parent_ou = "OU=Departement,DC=espagne,DC=lan"
 
             # Check if the OU already exists
             $new_ou = "OU=$department,$parent_ou"
@@ -39,116 +40,197 @@ function create_organizational_units_and_GGs_from_csv{
                 $new_ou = "OU=$($separated[1]),$parent_ou"
                 if (-not (Get-ADOrganizationalUnit -Filter "distinguishedName -eq '$new_ou'")){
                     New-ADOrganizationalUnit -Name $separated[1] -Path $parent_ou -ErrorAction Stop
-                    Write-Host "Created OU=$($separated[1]),$parent_ou"
+                    Write-Host "Created OU=$($separated[1]),$parent_ou" -ForegroundColor Green
                     create_global_group $separated[1] "OU=$($separated[1]),$parent_ou"
-                    Write-Host "Created GG_$($separated[1])"
+                    Write-Host "Created GG_$($separated[1])" -ForegroundColor Green
+                    add_global_group_to_common_group "GG_$($separated[1])"
                 }
+                $user_path = "OU=$($separated[1]),$parent_ou"
 
                 $parent_ou = "OU=$($separated[1]),$parent_ou"
                 $new_ou = "OU=$($separated[0]),$parent_ou"
                 if (-not (Get-ADOrganizationalUnit -Filter "distinguishedName -eq '$new_ou'")){
                     New-ADOrganizationalUnit -Name $separated[0] -Path $parent_ou -ErrorAction Stop
-                    Write-Host "Created OU=$($separated[0]),$parent_ou"
+                    Write-Host "Created OU=$($separated[0]),$parent_ou" -ForegroundColor Green
                     create_global_group $separated[0] "OU=$($separated[0]),$parent_ou"
-                    Write-Host "Created GG_$($separated[0])"
+                    Write-Host "Created GG_$($separated[0])" -ForegroundColor Green
+                    add_global_group_to_other_global_group "GG_$($separated[1])" "GG_$($separated[0])"
                 }
+                $user_path = "OU=$($separated[0]),$parent_ou"
+                $global_group = "GG_$($separated[0])"
             } else{
                 New-ADOrganizationalUnit -Name $department -Path $parent_ou -ErrorAction Stop
-                Write-Host "Created OU=$department,$parent_ou"
+                Write-Host "Created OU=$department,$parent_ou" -ForegroundColor Green
                 create_global_group $department "OU=$department,$parent_ou"
-                Write-Host "Created GG_$department"
+                Write-Host "Created GG_$department" -ForegroundColor Green
+                add_global_group_to_common_group "GG_${department}"
+                $user_path = "OU=$department,$parent_ou"
+                $global_group = "GG_${department}"
             }
+
+            create_user $user $user_path $global_group
         } Catch {
-            Write-Host "Erreur lors de la creation de l'OU $department.`nError: ${_}"
+            Write-Host "An error occured while creating the following OU: $department.`nError: ${_}"  -ForegroundColor Red
         }
     }
+    setup_common_group
 }
 
 function create_common_group{
-    # Lecture pour tous et ecriture pour la direction
-     Try {
-        $common_group_name = "Commun"
+     # Lecture pour tous et ecriture pour la direction
+     Try{
+        $common_group_name = "GG_Commun"
         New-ADGroup -Name $common_group_name -GroupScope Global -Path "OU=Departement,DC=espagne,DC=lan" -ErrorAction Stop
+        Write-Host "$common_group_name was successfully created." -ForegroundColor Green
+    } Catch{
+        Write-Host "An error occured while creating $common_group_name.`nError: ${_}" -ForegroundColor Red
+    }
+}
+
+function add_global_group_to_common_group{
+    param($group_to_add)
+    Try{
+        $common_group_name = "GG_Commun"
+        $group_to_add = Get-ADGroup $group_to_add
+        $common_group = Get-ADGroup $common_group_name
+        Add-ADGroupMember -Identity $common_group -Members $group_to_add
+    } Catch{
+        Write-Host "An error occured while adding global group to common group.`nError: ${_}" -ForegroundColor Red
+    }
+}
+
+function add_global_group_to_other_global_group{
+    param($parent_group, $child_group)
+
+    Try{
+        $parent_group = Get-ADGroup $parent_group
+        $child_group = Get-ADGroup $child_group
+        Add-ADGroupMember -Identity $parent_group -Members $child_group
+    } Catch{
+        Write-Host "An error occured while adding global group to other global group.`nError: ${_}" -ForegroundColor Red
+    }
+}
+
+function setup_common_group{
+    Try{
+        $common_group_name = "GG_Commun"
         $common_group = Get-ADGroup $common_group_name
         Set-ADGroup $common_group -GroupCategory:Security
         Set-ADGroup $common_group -ManagedBy "CN=GG_Direction,OU=Direction,OU=Departement,DC=espagne,DC=lan"
-        #Set-ADGroup $common_group -GroupScope:DomainLocal
-        Write-Host "Groupe $common_group_name cree avec succes."
     } Catch{
-        Write-Host "Erreur lors de la creation du groupe $common_group_name.`nError: ${_}"
+        Write-Host "An error occured while configuring $common_group_name.`nError: ${_}" -ForegroundColor Red
     }
 }
 
-function create_users{
-    foreach ($user in $users) {
-        if ($null -eq $user.Prenom -or $null -eq $user.Nom) {
-            Write-Host "Les propriÃ©tÃ©s Prenom ou Nom sont nulles. Utilisateur ignorÃ©."
-            continue
-        }
+function create_user{
+    param ($user, $path, $global_group)
 
-        $samAccountName = "espagne\" + $user.Prenom.ToLower()
-        $logonName = $user.Prenom.ToLower() + "." + $user.Nom.ToLower() + "@es.lan"
+    $firstname = $user | Select-Object -ExpandProperty Prenom
+    $lastname = $user | Select-Object -ExpandProperty Nom
+    $office = $user | Select-Object -ExpandProperty Bureau
+    $department = $user | Select-Object -ExpandProperty Departement
+    $department = $department.Replace(" ", "_")
+    $separated_office = $office -split " "
+    $office_number = $separated_office[1]
 
-        if ($samAccountName.Length -gt 20) {
-            $firstNameInitial = $user.Prenom.Substring(0, 1)
-            $samAccountName2 = "espagne\" + $firstNameInitial + "." + $user.Nom
-            $logonName = $firstNameInitial + "." + $user.Nom + "es.lan"
+    $samAccountName = "$($firstname.ToLower()).$($lastname.ToLower())"
+    $logonName = "${samAccountName}@espagne.lan"
 
-            # Demander Ã  l'utilisateur d'Ã©crire manuellement le samAccountName2 si nÃ©cessaire
-            if ($samAccountName2.Length -gt 20) {
-                $samAccountName2Input = Read-Host "Le samAccountName2 est trop long. Entrez manuellement :"
-                if ($samAccountName2Input) {
-                    $samAccountName2 = $samAccountName2Input
+    if ($samAccountName.Length -gt 20){
+        # Try to shorten the samAccountName
+        $firstNameInitial = $firstname.Substring(0, 1)
+        $samAccountName = "${firstNameInitial}.${lastname}"
+
+        # Check if user input is needed
+        if ($samAccountName.Length -gt 20){
+            $error = $true
+            Write-Host "Error: samAccountName ${samAccountName} is too long!" -ForegroundColor Red
+            Write-Host "Please enter a new samAccountName for user ${firstname} ${lastname}"
+            while ($error){
+                $samAccountNameInput = Read-Host "New samAccountName"
+                if ($samAccountNameInput) {
+                    $samAccountName = $samAccountNameInput
+                    $samAccountName = $samAccountName.ToLower()
+                    $samAccountName = $samAccountName.Replace(' ','')
+                    # check if the user already exists
+                    if ($(Get-ADUser -Filter "Name -like '$samAccountName'")){
+                        Write-Host "Error: This user already exists!" -ForegroundColor Red
+                        continue
+                    } elseif ($samAccountName.Length -gt 20){
+                        Write-Host "Error: samAccountName is too long!" -ForegroundColor Red
+                        continue
+                    }
+                    $error = $false
+                }
+            }
+        } elseif ($(Get-ADUser -Filter "Name -like '$samAccountName'")){
+            $error = $true
+            Write-Host "Error: User ${samAccountName} already exists!" -ForegroundColor Red
+            Write-Host "Please enter a new samAccountName for user ${firstname} ${lastname}"
+            while ($error){
+                $samAccountNameInput = Read-Host "New samAccountName"
+                if ($samAccountNameInput) {
+                    $samAccountName = $samAccountNameInput
+                    $samAccountName = $samAccountName.ToLower()
+                    $samAccountName = $samAccountName.Replace(' ','')
+                    # check if the user already exists
+                    if ($(Get-ADUser -Filter "Name -like '$samAccountName'")){
+                        Write-Host "Error: This user already exists!" -ForegroundColor Red
+                        continue
+                    } elseif ($samAccountName.Length -gt 20){
+                        Write-Host "Error: samAccountName is too long!" -ForegroundColor Red
+                        continue
+                    }
+                    $error = $false
                 }
             }
         }
-
-        # Demander Ã  l'utilisateur d'Ã©crire manuellement le logonName
-        $logonNameInput = Read-Host "Entrez le logonName manuellement :"
-        if ($logonNameInput) {
-            $logonName = $logonNameInput
-        }
-        $userParams = @{
-            SamAccountName    = $samAccountName2
-            UserPrincipalName = $logonName
-            Name              = $user.Nom
-            Surname           = $user.Prenom
-            Department        = $user.Departement
-            Path              = "OU=" + $user.Departement + ",DC=espagne,DC=lan"
-        }
-
-        try {
-            New-ADUser @userParams -ErrorAction Stop
-            Write-Host "Utilisateur $($user.Prenom) $($user.Nom) crÃ©Ã© avec succÃ¨s."
-        } catch {
-            Write-Host "Erreur lors de la crÃ©ation de l'utilisateur $($user.Prenom) $($user.Nom) : $_"
-        }
-
-        # Ajouter l'utilisateur au groupe de son dÃ©partement
-        $group = Get-ADGroup -Filter { Name -eq ($user.Department + " Group") }
-        try {
-            Add-ADGroupMember -Identity $group -Members $samAccountName -ErrorAction Stop
-            Write-Host "Utilisateur $($user.DisplayName) ajoutÃ© au groupe $($group.Name) avec succÃ¨s."
-        } catch {
-            Write-Host "Erreur lors de l'ajout de l'utilisateur $($user.DisplayName) au groupe $($group.Name) : $_"
-        }
-
-
-    # Ajouter l'utilisateur au groupe "Commun"
-        try {
-            Add-ADGroupMember -Identity $commonGroup -Members $samAccountName -ErrorAction Stop
-            Write-Host "Utilisateur $($user.DisplayName) ajoutÃ© au groupe Commun avec succÃ¨s."
-        } catch {
-            Write-Host "Erreur lors de l'ajout de l'utilisateur $($user.DisplayName) au groupe Commun : $_"
-        }
-
-        # CrÃ©er un dossier partagÃ© pour l'utilisateur dans le format "D:\Shared\<Department>\<Username>"
-        $folderPath = "D:\Shared\" + $user.Department + "\" + $samAccountName
-        try {
-            New-Item -ItemType Directory -Path $folderPath -ErrorAction Stop
-            Write-Host "Dossier partagÃ© $($folderPath) crÃ©Ã© avec succÃ¨s."
-        } catch {
-            Write-Host "Erreur lors de la crÃ©ation du dossier partagÃ© $($folderPath) : $_"
-        }
+        $samAccountName = $samAccountName.ToLower()
+        $samAccountName = $samAccountName.Replace(' ','')
+        $logonName = "${samAccountName}@espagne.lan"
     }
+    
+    $userParams = @{
+        SamAccountName    = $samAccountName
+        UserPrincipalName = $logonName
+        Name              = $samAccountName
+        GivenName         = $firstname
+        Surname           = $lastname
+        Path              = $path
+        Office            = $office_number
+    }
+    try {
+        if (-not $(Get-ADUser -Filter "Name -like '$samAccountName'")){
+            New-ADUser @userParams -ErrorAction Stop
+            Write-Host "User ${samAccountName} successfully created." -ForegroundColor Green
+        } else{
+            Write-Host "Error: User ${samAccountName} already exists!" -ForegroundColor Red
+        }
+    } catch {
+        write-Host "An error occured while creating new user ${firstname} ${lastname}.`nError: ${_}" -ForegroundColor Red
+    }
+
+    
+    # Add user to its department global group
+    $group = Get-ADGroup -Filter "Name -eq '$global_group'"
+    try {
+        Add-ADGroupMember -Identity $group -Members $samAccountName -ErrorAction Stop
+        Write-Host "User ${samAccountName} successfully added to $global_group." -ForegroundColor Green
+    } catch {
+        Write-Host "An error occured while adding ${samAccountName} to $global_group`nError: ${_}" -ForegroundColor Red
+    }
+
+    <#
+    # CrÃƒÂ©er un dossier partagÃƒÂ© pour l'utilisateur dans le format "D:\Shared\<Department>\<Username>"
+    $folderPath = "D:\Shared\" + $Department + "\" + $samAccountName
+    try {
+        New-Item -ItemType Directory -Path $folderPath -ErrorAction Stop
+        Write-Host "Dossier partagÃƒÂ© $($folderPath) cree© avec succes."
+    } catch {
+        Write-Host "Erreur lors de la crÃƒÂ©ation du dossier partagÃƒÂ© $($folderPath) : $_"
+    }
+    #>
+    
 }
+
+create_organizational_units_and_GGs_from_csv
