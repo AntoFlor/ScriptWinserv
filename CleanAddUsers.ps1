@@ -217,6 +217,7 @@ function create_user{
         Path              = $path
         Office            = $office_number
         AccountPassword   = ConvertTo-SecureString $password -AsPlainText -Force
+		Enabled           = $true
     }
     try {
         if (-not $(Get-ADUser -Filter "Name -like '$samAccountName'")){
