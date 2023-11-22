@@ -1,5 +1,3 @@
-$users = Import-Csv -Path "./formated_users.csv" -Delimiter ";"
-
 function create_global_group{
     param(
         [string]$department,
@@ -124,13 +122,23 @@ function create_organizational_units_and_GGs_from_csv{
 }
 
 function create_common_group{
-     # Lecture pour tous et ecriture pour la direction
      Try{
         $common_group_name = "GG_Commun"
         New-ADGroup -Name $common_group_name -GroupScope Global -Path "OU=Departement,DC=espagne,DC=lan" -ErrorAction Stop
         Write-Host "$common_group_name was successfully created." -ForegroundColor Green
     } Catch{
         Write-Host "An error occured while creating $common_group_name.`nError: ${_}" -ForegroundColor Red
+    }
+}
+
+function setup_common_group{
+    Try{
+        $common_group_name = "GG_Commun"
+        $common_group = Get-ADGroup $common_group_name
+        Set-ADGroup $common_group -GroupCategory:Security
+        Set-ADGroup $common_group -ManagedBy "CN=GG_Direction,OU=Direction,OU=Departement,DC=espagne,DC=lan"
+    } Catch{
+        Write-Host "An error occured while configuring $common_group_name.`nError: ${_}" -ForegroundColor Red
     }
 }
 
@@ -155,29 +163,6 @@ function add_group_to_other_group{
         Add-ADGroupMember -Identity $parent_group -Members $child_group
     } Catch{
         Write-Host "An error occured while adding global group to other global group.`nError: ${_}" -ForegroundColor Red
-    }
-}
-
-function add_global_group_to_local_group{
-    param(
-        $global_group,
-        $local_group
-    )
-    #$global_group = Get-ADGroup $global_group
-    #$local_group = Get-LocalGroup $local_group
-    Write-Host $global_group
-    Write-Host $local_group
-    #Add-ADGroupMember -Group $local_group -Member $global_group
-}
-
-function setup_common_group{
-    Try{
-        $common_group_name = "GG_Commun"
-        $common_group = Get-ADGroup $common_group_name
-        Set-ADGroup $common_group -GroupCategory:Security
-        Set-ADGroup $common_group -ManagedBy "CN=GG_Direction,OU=Direction,OU=Departement,DC=espagne,DC=lan"
-    } Catch{
-        Write-Host "An error occured while configuring $common_group_name.`nError: ${_}" -ForegroundColor Red
     }
 }
 
@@ -299,18 +284,4 @@ function create_user{
     } catch {
         Write-Host "An error occured while adding ${samAccountName} to $global_group`nError: ${_}" -ForegroundColor Red
     }
-
-    <#
-    # CrÃƒÂ©er un dossier partagÃƒÂ© pour l'utilisateur dans le format "D:\Shared\<Department>\<Username>"
-    $folderPath = "D:\Shared\" + $Department + "\" + $samAccountName
-    try {
-        New-Item -ItemType Directory -Path $folderPath -ErrorAction Stop
-        Write-Host "Dossier partagÃƒÂ© $($folderPath) cree© avec succes."
-    } catch {
-        Write-Host "Erreur lors de la crÃƒÂ©ation du dossier partagÃƒÂ© $($folderPath) : $_"
-    }
-    #>
 }
-#create_common_group
-create_organizational_units_and_GGs_from_csv
-
