@@ -14,10 +14,19 @@ function create_global_group{
     }
 }
 
+function get_random_characters($length, $characters) { 
+    $random = 1..$length | ForEach-Object { Get-Random -Maximum $characters.length } 
+    $private:ofs="" 
+    return [String]$characters[$random]
+}
+
 function generate_password{
-    Add-Type -AssemblyName System.Web
-    $pwd = $([System.Web.Security.Membership]::GeneratePassword(20,5))
-    return $pwd
+    param($size)
+    $password = get_random_characters -length $($size - 3) -characters 'abcdefghiklmnoprstuvwxyz'
+    $password += get_random_characters -length 1 -characters 'ABCDEFGHKLMNOPRSTUVWXYZ'
+    $password += get_random_characters -length 1 -characters '1234567890'
+    $password += get_random_characters -length 1 -characters '!"§$%&/()=?}][{@#*+'
+    return $password
 }
 
 function create_organizational_units_and_GGs_from_csv{
@@ -205,8 +214,11 @@ function create_user{
         $samAccountName = $samAccountName.Replace(' ','')
         $logonName = "${samAccountName}@espagne.lan"
     }
-
-    $password = generate_password
+    if ($path -eq "OU=Direction,OU=Departement,DC=espagne,DC=lan"){
+        $password = generate_password 15
+    } else{
+        $password = generate_password 7
+    }
     
     $userParams = @{
         SamAccountName    = $samAccountName
@@ -256,3 +268,4 @@ function create_user{
 }
 #create_common_group
 create_organizational_units_and_GGs_from_csv
+
