@@ -198,6 +198,7 @@ function create_user{
     $lastname = $user | Select-Object -ExpandProperty Nom
     $office = $user | Select-Object -ExpandProperty Bureau
     $department = $user | Select-Object -ExpandProperty Departement
+    $phone = $user | Select-Object -ExpandProperty N_Interne
     $department = $department.Replace(" ", "_")
     $separated_office = $office -split " "
     $office_number = $separated_office[1]
@@ -274,6 +275,7 @@ function create_user{
         Office            = $office_number
         AccountPassword   = ConvertTo-SecureString $password -AsPlainText -Force
 		Enabled           = $true
+        OfficePhone       = $phone
     }
     try {
         if (-not $(Get-ADUser -Filter "Name -like '$samAccountName'")){
@@ -308,7 +310,6 @@ function create_user{
         Write-Host "Erreur lors de la crÃƒÂ©ation du dossier partagÃƒÂ© $($folderPath) : $_"
     }
     #>
-    
 }
 #create_common_group
 create_organizational_units_and_GGs_from_csv
