@@ -9,8 +9,24 @@ function create_global_group{
     $group_name = "GG_${department}"
     Try{
         New-ADGroup -Name $group_name -GroupScope Global -Path $path -ErrorAction Stop
+        Write-Host "Created $group_name" -ForegroundColor Green
     } Catch{
         Write-Host "An error occurend while creating group $group_name.`nError: ${_}" -ForegroundColor Red
+    }
+}
+
+function create_local_group{
+    param(
+        [string]$department,
+        [string]$path
+    )
+
+    $group_name = "GL_${department}"
+    Try{
+        New-ADGroup -Name $group_name -GroupScope DomainLocal -Path $path -ErrorAction Stop
+        Write-Host "Created $group_name" -ForegroundColor Green
+    } Catch{
+        Write-Host "An error occurend while creating local group $group_name.`nError: ${_}" -ForegroundColor Red
     }
 }
 
@@ -56,9 +72,14 @@ function create_organizational_units_and_GGs_from_csv{
                 if (-not (Get-ADOrganizationalUnit -Filter "distinguishedName -eq '$new_ou'")){
                     New-ADOrganizationalUnit -Name $separated[1] -Path $parent_ou -ErrorAction Stop
                     Write-Host "Created OU=$($separated[1]),$parent_ou" -ForegroundColor Green
+
                     create_global_group $separated[1] "OU=$($separated[1]),$parent_ou"
-                    Write-Host "Created GG_$($separated[1])" -ForegroundColor Green
+                    create_local_group "$($separated[1])_R" "OU=$($separated[1]),$parent_ou"
+                    create_local_group "$($separated[1])_RW" "OU=$($separated[1]),$parent_ou"
+
                     add_global_group_to_common_group "GG_$($separated[1])"
+                    add_group_to_other_group "GL_$($separated[1])_R" "GG_$($separated[1])"
+                    add_group_to_other_group "GL_$($separated[1])_RW" "GG_$($separated[1])"
                 }
                 $user_path = "OU=$($separated[1]),$parent_ou"
 
@@ -67,18 +88,29 @@ function create_organizational_units_and_GGs_from_csv{
                 if (-not (Get-ADOrganizationalUnit -Filter "distinguishedName -eq '$new_ou'")){
                     New-ADOrganizationalUnit -Name $separated[0] -Path $parent_ou -ErrorAction Stop
                     Write-Host "Created OU=$($separated[0]),$parent_ou" -ForegroundColor Green
+
                     create_global_group $separated[0] "OU=$($separated[0]),$parent_ou"
-                    Write-Host "Created GG_$($separated[0])" -ForegroundColor Green
-                    add_global_group_to_other_global_group "GG_$($separated[1])" "GG_$($separated[0])"
+                    create_local_group "$($separated[0])_R" "OU=$($separated[0]),$parent_ou"
+                    create_local_group "$($separated[0])_RW" "OU=$($separated[0]),$parent_ou"
+
+                    add_group_to_other_group "GG_$($separated[1])" "GG_$($separated[0])"
+                    add_group_to_other_group "GL_$($separated[0])_R" "GG_$($separated[0])"
+                    add_group_to_other_group "GL_$($separated[0])_RW" "GG_$($separated[0])"
                 }
                 $user_path = "OU=$($separated[0]),$parent_ou"
                 $global_group = "GG_$($separated[0])"
             } else{
                 New-ADOrganizationalUnit -Name $department -Path $parent_ou -ErrorAction Stop
                 Write-Host "Created OU=$department,$parent_ou" -ForegroundColor Green
+
                 create_global_group $department "OU=$department,$parent_ou"
-                Write-Host "Created GG_$department" -ForegroundColor Green
                 add_global_group_to_common_group "GG_${department}"
+
+                create_local_group "${department}_R" "OU=$department,$parent_ou"
+                create_local_group "${department}_RW" "OU=$department,$parent_ou"
+
+                add_group_to_other_group "GL_${department}_R" "GG_${department}"
+                add_group_to_other_group "GL_${department}_RW" "GG_${department}"
                 $user_path = "OU=$department,$parent_ou"
                 $global_group = "GG_${department}"
             }
@@ -114,7 +146,7 @@ function add_global_group_to_common_group{
     }
 }
 
-function add_global_group_to_other_global_group{
+function add_group_to_other_group{
     param($parent_group, $child_group)
 
     Try{
@@ -124,6 +156,18 @@ function add_global_group_to_other_global_group{
     } Catch{
         Write-Host "An error occured while adding global group to other global group.`nError: ${_}" -ForegroundColor Red
     }
+}
+
+function add_global_group_to_local_group{
+    param(
+        $global_group,
+        $local_group
+    )
+    #$global_group = Get-ADGroup $global_group
+    #$local_group = Get-LocalGroup $local_group
+    Write-Host $global_group
+    Write-Host $local_group
+    #Add-ADGroupMember -Group $local_group -Member $global_group
 }
 
 function setup_common_group{
