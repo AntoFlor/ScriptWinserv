@@ -110,7 +110,7 @@ function basic_config{
 
 
 
-##### BEGIN ADDS #####
+##### BEGIN ADDS SETUP #####
 function adds_install{
     Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools -ErrorAction Stop
     Write-Host "Active Directory Domain Services installed" -ForegroundColor Green
@@ -136,7 +136,7 @@ function adds_setup{
         Write-Warning -Message "Failed to configure Active directory Domain Services.`nError: ${_}"
     }
 }
-##### END ADDS ######
+##### END ADDS SETUP ######
 
 
 
@@ -394,11 +394,11 @@ function create_user{
         Office            = $office_number
         AccountPassword   = ConvertTo-SecureString $password -AsPlainText -Force
 		Enabled           = $true
-        OfficePhone       = $phone
     }
     try {
         if (-not $(Get-ADUser -Filter "Name -like '$samAccountName'")){
             New-ADUser @userParams -ErrorAction Stop
+			Set-ADUser -Identity $samAccountName -Replace @{'ipPhone'=$phone}
             Write-Host "User ${samAccountName} successfully created." -ForegroundColor Green
             store_user_account_locally $samAccountName $password
             Write-Host "User ${samAccountName} saved locally." -ForegroundColor Green
