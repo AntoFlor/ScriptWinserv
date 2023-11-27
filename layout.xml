@@ -1,0 +1,23 @@
+<LayoutModificationTemplate xmlns:defaultlayout="http://schemas.microsoft.com/Start/2014/FullDefaultLayout" xmlns:start="http://schemas.microsoft.com/Start/2014/StartLayout" Version="1" xmlns="http://schemas.microsoft.com/Start/2014/LayoutModification">
+  <LayoutOptions StartTileGroupCellWidth="6" />
+  <DefaultLayoutOverride>
+    <StartLayoutCollection>
+      <defaultlayout:StartLayout GroupCellWidth="6">
+        <start:Group Name="Productivité mon oeil">
+          <start:Folder Name="" Size="2x2" Column="2" Row="0">
+            <start:SecondaryTile AppUserModelID="Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge" TileID="6501008900" DisplayName="" Size="2x2" Column="4" Row="0" Arguments="-contentTile -url 0 https://excel.office.com" Square71x71LogoUri="ms-appdata:///local/PinnedTiles/6501008900/tinytile.png" Square150x150LogoUri="ms-appdata:///local/PinnedTiles/6501008900/squaretile.png" Wide310x150LogoUri="ms-appx:///" Square310x310LogoUri="ms-appx:///" ShowNameOnSquare150x150Logo="true" ShowNameOnWide310x150Logo="false" BackgroundColor="#ff404040" ForegroundText="light" />
+            <start:DesktopApplicationTile Size="2x2" Column="0" Row="2" DesktopApplicationID="Microsoft.SkyDrive.Desktop" />
+            <start:SecondaryTile AppUserModelID="Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge" TileID="7603651830" DisplayName="" Size="2x2" Column="2" Row="0" Arguments="-contentTile -url 0 https://word.office.com" Square71x71LogoUri="ms-appdata:///local/PinnedTiles/7603651830/tinytile.png" Square150x150LogoUri="ms-appdata:///local/PinnedTiles/7603651830/squaretile.png" Wide310x150LogoUri="ms-appx:///" Square310x310LogoUri="ms-appx:///" ShowNameOnSquare150x150Logo="true" ShowNameOnWide310x150Logo="false" BackgroundColor="#ff404040" ForegroundText="light" />
+            <start:SecondaryTile AppUserModelID="Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge" TileID="38975140460" DisplayName="" Size="2x2" Column="2" Row="2" Arguments="-contentTile -url 0 https://powerpoint.office.com" Square71x71LogoUri="ms-appdata:///local/PinnedTiles/38975140460/tinytile.png" Square150x150LogoUri="ms-appdata:///local/PinnedTiles/38975140460/squaretile.png" Wide310x150LogoUri="ms-appx:///" Square310x310LogoUri="ms-appx:///" ShowNameOnSquare150x150Logo="true" ShowNameOnWide310x150Logo="false" BackgroundColor="#ff404040" ForegroundText="light" />
+            <start:SecondaryTile AppUserModelID="Microsoft.MicrosoftEdge_8wekyb3d8bbwe!MicrosoftEdge" TileID="26310719480" DisplayName="" Size="2x2" Column="0" Row="0" Arguments="-contentTile -url 0 https://outlook.com" Square71x71LogoUri="ms-appdata:///local/PinnedTiles/26310719480/tinytile.png" Square150x150LogoUri="ms-appdata:///local/PinnedTiles/26310719480/squaretile.png" Wide310x150LogoUri="ms-appx:///" Square310x310LogoUri="ms-appx:///" ShowNameOnSquare150x150Logo="true" ShowNameOnWide310x150Logo="false" BackgroundColor="#ff404040" ForegroundText="light" />
+          </start:Folder>
+          <start:DesktopApplicationTile Size="2x2" Column="0" Row="2" DesktopApplicationID="MSEdge" />
+          <start:Tile Size="2x2" Column="4" Row="2" AppUserModelID="Microsoft.Todos_8wekyb3d8bbwe!App" />
+          <start:Tile Size="2x2" Column="2" Row="2" AppUserModelID="Microsoft.Windows.Photos_8wekyb3d8bbwe!App" />
+          <start:Tile Size="2x2" Column="0" Row="0" AppUserModelID="Microsoft.MicrosoftOfficeHub_8wekyb3d8bbwe!Microsoft.MicrosoftOfficeHub" />
+          <start:Tile Size="2x2" Column="4" Row="0" AppUserModelID="microsoft.windowscommunicationsapps_8wekyb3d8bbwe!Microsoft.WindowsLive.Mail" />
+        </start:Group>
+      </defaultlayout:StartLayout>
+    </StartLayoutCollection>
+  </DefaultLayoutOverride>
+</LayoutModificationTemplate>
